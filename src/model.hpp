@@ -126,6 +126,12 @@ public:
     mpz_mul(cur_y_raw, y, rinv_);
     mpz_mod(cur_y_raw, cur_y_raw, modulus_);
 
+    // TODO: remove
+    gmp_printf("[result] x_mont = %#Zx\n", x);
+    gmp_printf("[result] y_mont = %#Zx\n", y);
+    gmp_printf("[result] x_cur_raw = %#Zx\n", cur_x_raw);
+    gmp_printf("[result] y_cur_raw = %#Zx\n", cur_y_raw);
+
     if (job_id != cur_job_id_) {
       printf("ERROR: received job_id %x, expected %x\n",
              job_id, cur_job_id_);
@@ -156,6 +162,27 @@ public:
     byte_count = (mpz_sizeinbase(prev_y_raw_, 2) + 7) / 8;
     assert(byte_count <= 32);
     mpz_export(xy0+64-byte_count, nullptr, 1, 1, 0, 0, prev_y_raw_);
+
+    // TODO: remove
+    printf("[result] prev_iter = %llu\n", prev_iter_);
+    printf("[result] xy_d[%llu] = ", iter-1);
+    for (int i = 0; i < 32; i++) {
+      printf("%02x", xy_d[i]);
+    }
+    printf(", ");
+    for (int i = 32; i < 64; i++) {
+      printf("%02x", xy_d[i]);
+    }
+    printf("\n[result] (x0, y0) = ");
+    for (int i = 0; i < 32; i++) {
+      printf("%02x", xy0[i]);
+    }
+    printf(", ");
+    for (int i = 32; i < 64; i++) {
+      printf("%02x", xy0[i]);
+    }
+    printf("\n");
+    // ---
 
     success = minroot_partial_verify_pallas(xy_d, xy0, iter-1, prev_iter_);
 
