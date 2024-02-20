@@ -39,10 +39,22 @@ public:
                prev_x_, prev_y_, prev_x_raw_, prev_y_raw_, NULL);
   }
 
+  void toMont(mpz_t ret, mpz_t x) {
+    mpz_mul(ret, x, r_);
+    mpz_mod(ret, ret, modulus_);
+  }
+
+  void fromMont(mpz_t ret, mpz_t x) {
+    mpz_mul(ret, x, rinv_);
+    mpz_mod(ret, ret, modulus_);
+  }
+
   void GenInputs(mpz_t x, mpz_t y, uint32_t& job_id,
                  uint64_t& iteration_count, uint64_t& starting_iteration) {
-    mpz_urandomb(x, rand_state_g_, (17 * 16) - 1);
-    mpz_urandomb(y, rand_state_g_, (17 * 16) - 1);
+    // mpz_urandomb(x, rand_state_g_, (17 * 16) - 1);
+    // mpz_urandomb(y, rand_state_g_, (17 * 16) - 1);
+    toMont(x, x);
+    toMont(y, y);
 
     job_id = (uint32_t) rand();
 
@@ -77,6 +89,10 @@ public:
       starting_iteration = rand_start;
     }
 
+    // from_mont(x) -> (x*rinv (mod p))
+    // to_mont(x) -> (x*r (mod p))
+    // prev_x_raw <- from_mont(x)
+    // x is already assumed to be in montgomery
     mpz_mul(prev_x_raw_, x, rinv_);
     mpz_mod(prev_x_raw_, prev_x_raw_, modulus_);
     mpz_mul(prev_y_raw_, y, rinv_);
