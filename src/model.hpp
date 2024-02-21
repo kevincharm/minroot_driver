@@ -30,7 +30,9 @@ public:
     mpz_set_str(fifth_root_exp_, root_exp.c_str(), 16);
 
     mpz_set_ui(r_, 1);
-    mpz_mul_2exp(r_, r_, 8 * 16);
+    mpz_mul_2exp(r_, r_, 128);
+    mpz_mod(r_, r_, modulus_);
+    gmp_printf("[init] Mont R = %#Zx\n", r_);
     mpz_invert(rinv_, r_, modulus_);
   }
 
@@ -127,10 +129,9 @@ public:
     mpz_mod(cur_y_raw, cur_y_raw, modulus_);
 
     // TODO: remove
-    gmp_printf("[result] x_mont = %#Zx\n", x);
-    gmp_printf("[result] y_mont = %#Zx\n", y);
-    gmp_printf("[result] x_cur_raw = %#Zx\n", cur_x_raw);
-    gmp_printf("[result] y_cur_raw = %#Zx\n", cur_y_raw);
+    gmp_printf("[result] Raw  (x_%llu, y_%llu) = (%064Zx, %064Zx)\n", prev_iter_-1, prev_iter_-1, prev_x_raw_, prev_y_raw_);
+    gmp_printf("[result] Mont (x_%llu, y_%llu) = (%064Zx, %064Zx)\n", iter-1, iter-1, x, y);
+    gmp_printf("[result] Raw  (x_%llu, y_%llu) = (%064Zx, %064Zx)\n", iter-1, iter-1, cur_x_raw, cur_y_raw);
 
     if (job_id != cur_job_id_) {
       printf("ERROR: received job_id %x, expected %x\n",
@@ -162,27 +163,6 @@ public:
     byte_count = (mpz_sizeinbase(prev_y_raw_, 2) + 7) / 8;
     assert(byte_count <= 32);
     mpz_export(xy0+64-byte_count, nullptr, 1, 1, 0, 0, prev_y_raw_);
-
-    // TODO: remove
-    printf("[result] prev_iter = %llu\n", prev_iter_);
-    printf("[result] xy_d[%llu] = ", iter-1);
-    for (int i = 0; i < 32; i++) {
-      printf("%02x", xy_d[i]);
-    }
-    printf(", ");
-    for (int i = 32; i < 64; i++) {
-      printf("%02x", xy_d[i]);
-    }
-    printf("\n[result] (x0, y0) = ");
-    for (int i = 0; i < 32; i++) {
-      printf("%02x", xy0[i]);
-    }
-    printf(", ");
-    for (int i = 32; i < 64; i++) {
-      printf("%02x", xy0[i]);
-    }
-    printf("\n");
-    // ---
 
     success = minroot_partial_verify_pallas(xy_d, xy0, iter-1, prev_iter_);
 
