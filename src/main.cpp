@@ -40,10 +40,8 @@ bool CheckResults(Driver& driver, Model& model, uint8_t* job) {
 
 // Note: caller must free the buffer
 uint8_t* PrepareJob(Driver& driver, Model& model, size_t& size,
-                    uint64_t& iteration_count, uint64_t& start_iter) {
-  mpz_t x, y;
-  mpz_inits(x, y, NULL);
-
+                    uint64_t& iteration_count, uint64_t& start_iter,
+                    mpz_t x, mpz_t y) {
   uint32_t job_id;
 
   model.GenInputs(x, y, job_id, iteration_count, start_iter);
@@ -134,8 +132,11 @@ int main(int argc, char* argv[]) {
   double voltage = 0.80;
   uint64_t iters = 0; // 0 implies randomize
   uint64_t start_iter = 0; // 0 implies randomize
+  mpz_t input_x;
+  mpz_t input_y;
+  mpz_inits(input_x, input_y, NULL);
 
-  while ((opt = getopt(argc, argv, "t:f:v:i:s:n:e:h")) != -1) {
+  while ((opt = getopt(argc, argv, "t:f:v:i:s:n:e:h:x:y:")) != -1) {
     switch(opt) {
       case 'h':
         printf("Help\n");
@@ -146,6 +147,8 @@ int main(int argc, char* argv[]) {
         printf(" -v <voltage> (should be between 0.70 and 1.0)\n");
         printf(" -i <iterations>\n");
         printf(" -t <starting iteration>\n");
+        printf(" -x <input x in hex>\n");
+        printf(" -y <input y in hex>\n");
         return 0;
         break;
       case 'f':
@@ -175,6 +178,14 @@ int main(int argc, char* argv[]) {
       case 'e':
         num_engines = (unsigned int)atoi(optarg);
         printf("Command line Number of engines %d\n", num_engines);
+        break;
+      case 'x':
+        mpz_set_str(input_x, optarg, 16);
+        gmp_printf("Command line input x = %#Zx\n", input_x);
+        break;
+      case 'y':
+        mpz_set_str(input_y, optarg, 16);
+        gmp_printf("Command line input y = %#Zx\n", input_y);
         break;
       case ':':
         printf("Command line option needs a value\n");
@@ -233,7 +244,7 @@ int main(int argc, char* argv[]) {
     // start jobs on idle engines as long as jobs remain
     for(unsigned i=0; i<num_engines; i++) {
       if (!job[i] && started_jobs<num_jobs) {
-        job[i] = PrepareJob(driver, *model[i], size[i], iters, start_iter);
+        job[i] = PrepareJob(driver, *model[i], size[i], iters, start_iter, input_x, input_y);
         printf("Starting job %d id=0x%x on engine %d with iters %" PRId64 "\n",
                started_jobs,*(unsigned *)job[i],i, iters);
         printf("start_iter %" PRId64 "\n", start_iter);
